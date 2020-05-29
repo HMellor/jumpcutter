@@ -93,3 +93,6 @@ ENV/
 *.iml
 out
 gen
+
+# Ignore video files
+**/*.mp4

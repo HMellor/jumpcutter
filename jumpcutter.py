@@ -38,8 +38,8 @@ def getMaxVolume(s):
 
 
 def copyFrame(inputFrame, outputFrame):
-    src = temp_dir + "/frame{:06d}".format(inputFrame + 1) + ".jpg"
-    dst = temp_dir + "/newFrame{:06d}".format(outputFrame + 1) + ".jpg"
+    src = "{}/frame{:06d}.jpg".format(temp_dir, inputFrame + 1)
+    dst = "{}/newFrame{:06d}.jpg".format(temp_dir, outputFrame + 1)
     if not os.path.isfile(src):
         return False
     copyfile(src, dst)
@@ -52,22 +52,27 @@ def reset_dir(s):
     try:
         deletePath(s)
         os.mkdir(s)
-    except OSError:
-        assert False, "Creation of the directory {} failed. (The TEMP folder may already exist. Delete or rename it, and try again.)".format(s)
+        print('Directory {} reset'.format(s))
+    except OSError as e:
+        print("Error: {} \nCreation of the directory {} failed. (The TEMP folder may already exist. Delete or rename it, and try again.)".format(e.strerror, s))
 
 
 def deletePath(s):  # Dangerous! Watch out!
-    try:
-        rmtree(s, ignore_errors=False)
-    except OSError:
-        print("Deletion of the directory %s failed" % s)
-        print(OSError)
+    if os.path.isdir(s):
+        try:
+            rmtree(s, ignore_errors=False)
+            print('Directory {} deleted'.format(s))
+        except OSError as e:
+            print('Deletion of the directory {} failed'.format(s))
+            print(e.strerror)
+    else:
+        print('Directory does not exist, skippig deletion of {}'.format(s))
 
 
 parser = argparse.ArgumentParser(description='Modifies a video file to play at different speeds when there is sound vs. silence.')
 parser.add_argument('--input_path', type=str,  help='the video file you want modified')
 parser.add_argument('--url', type=str, help='A youtube url to download and process')
-parser.add_argument('--output_path', type=str, default="", help="the output file. (optional. if not included, it'll just modify the input file name)")
+parser.add_argument('--output_dir', type=str, default="./", help="the output directory. (optional. if not included, it'll just modify the input file name)")
 parser.add_argument('--silent_threshold', type=float, default=0.03, help="the volume amount that frames' audio needs to surpass to be consider \"sounded\". It ranges from 0 (silence) to 1 (max volume)")
 parser.add_argument('--sounded_speed', type=float, default=1.00, help="the speed that sounded (spoken) frames should be played at. Typically 1.")
 parser.add_argument('--silent_speed', type=float, default=5.00, help="the speed that silent frames should be played at. 999999 for jumpcutting.")
@@ -105,10 +110,10 @@ try:
 
     assert input_path is not None, "why u put no input file, that dum"
 
-    if len(args.output_path) >= 1:
-        output_path = args.output_path
-    else:
-        output_path = os.path.join(output_dir, os.path.basename(input_path))
+    if len(args.output_dir) >= 1:
+        output_dir = args.output_dir
+
+    output_path = os.path.join(output_dir, os.path.basename(input_path))
 
     input_name = os.path.basename(input_path)[:-4]
     temp_dir = os.path.join(working_dir, input_name)
@@ -220,7 +225,7 @@ try:
         copyFrame(int(audioSampleCount/samplesPerFrame)-1,endGap)
     '''
 
-    command = "ffmpeg -y -framerate {} -i {}/newFrame%06d.jpg -i {}/audioNew.wav -strict -2 {}".format(str(frameRate), temp_dir, temp_dir, output_path)
+    command = "ffmpeg -y -c:v mjpeg_cuvid -framerate {} -i {}/newFrame%06d.jpg -i {}/audioNew.wav -strict -2 -c:v h264_nvenc {}".format(str(frameRate), temp_dir, temp_dir, output_path)
     subprocess.call(command, shell=True)
 finally:
     deletePath(temp_dir)

@@ -8,22 +8,28 @@ from bs4 import BeautifulSoup
 
 def getPlaylistLinks(url):
     link_list = []
-    sourceCode = requests.get(url).text
-    soup = BeautifulSoup(sourceCode, 'html.parser')
-    domain = 'https://www.youtube.com'
-    playlist_name = soup.find('title').text
+    correct_playlist = False
+    while not correct_playlist:
+        sourceCode = requests.get(url).text
+        soup = BeautifulSoup(sourceCode, 'html.parser')
+        domain = 'https://www.youtube.com'
+        playlist_name = soup.find('title').text
+        if playlist_name != 'YouTube':
+            correct_playlist = True
     print('Getting links for: ' + playlist_name)
-    links = soup.find_all("a", {"dir": "ltr"})
-    for link in links:
-        href = link.get('href')
-        if href.startswith('/watch?'):
-            link_list.append(domain + href)
+    while len(link_list) == 0:
+        links = soup.find_all("a", {"dir": "ltr"})
+        for link in links:
+            href = link.get('href')
+            if href.startswith('/watch?'):
+                link_list.append(domain + href)
     print('{} links collected'.format(len(link_list)))
     return link_list
 
 
 def cut_video(url):
-    command = 'python ./jumpcutter.py --sounded_speed {} --silent_speed {} --url "{}"'.format(1.80, 999999.00, url)
+    output_dir = 'C:/users/hejme/Desktop/speedy_lectures/output'
+    command = 'python ./jumpcutter.py --output_dir "{}" --sounded_speed {} --silent_speed {} --url "{}"'.format(output_dir, 2., 8., url)
     subprocess.call(command, shell=True)
 
 
