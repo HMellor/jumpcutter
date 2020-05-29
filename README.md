@@ -1,3 +1,6 @@
+# Fork notes
+The purpose of this fork is to add batch processing for YouTube playlists
+
 # jumpcutter
 Automatically edits videos. Explanation here: https://www.youtube.com/watch?v=DQ8orIurGxw
 
