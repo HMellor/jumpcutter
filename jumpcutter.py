@@ -14,7 +14,7 @@ from audiotsm.io.wav import WavReader, WavWriter
 def downloadFile(save_dir, url):
     correct_filename = False
     while not correct_filename:
-        video_stream = YouTube(url).streams.first()
+        video_stream = YouTube(url).streams.get_highest_resolution()
         file_name = video_stream.default_filename
         if file_name != 'YouTube.mp4':
             correct_filename = True
