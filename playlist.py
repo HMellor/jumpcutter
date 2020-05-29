@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 
 
 def getPlaylistLinks(url):
-    link_list = []
+    videos = {}
     correct_playlist = False
     while not correct_playlist:
         sourceCode = requests.get(url).text
@@ -17,14 +17,14 @@ def getPlaylistLinks(url):
         if playlist_name != 'YouTube':
             correct_playlist = True
     print('Getting links for: ' + playlist_name)
-    while len(link_list) == 0:
+    while len(videos.keys()) == 0:
         links = soup.find_all("a", {"dir": "ltr"})
         for link in links:
             href = link.get('href')
             if href.startswith('/watch?'):
-                link_list.append(domain + href)
-    print('{} links collected'.format(len(link_list)))
-    return link_list
+                videos[link.string.strip()] = domain + href
+    print('{} links collected'.format(len(videos)))
+    return videos
 
 
 def cut_video(url):
@@ -49,10 +49,49 @@ def cut_all_videos(urls):
             pool.join()
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Takes a youtube playlist and and condenses each video using jumpcutter.')
-    parser.add_argument('--playlist_url', '-p', type=str,  help='the url of the playlist to cut down')
-    args = parser.parse_args()
+def repl():
+    print('Please chose to convert a playlist or a single video?: [p/v]')
+    to_convert = input()
+    valid_answers = {'p', 'v'}
+    assert to_convert in valid_answers, 'Bad selection, please choose from: (p, v)'
+    print('Please provide the URL to fetch the video{} from:'.format('s' if to_convert == 'p' else ''))
+    url = input()
+    if to_convert == 'p':
+        videos = getPlaylistLinks(url)
+        print('Would you like to download all of the videos? [y/n]')
+        download_all = input()
+        valid_answers = {'y', 'n'}
+        assert download_all in valid_answers, 'Bad selection, please choose from: (y, n)'
+        if download_all == 'y':
+            cut_all_videos(videos.values())
+        elif download_all == 'n':
+            print('Which video would you like to download?')
+            indices = {}
+            for i, name in enumerate(videos.keys()):
+                indices[i] = name
+                print('[{}] - {}'.format(i, name))
+            video_index = int(input())
+            valid_answers = {i for i in range(len(videos.keys()))}
+            assert video_index in valid_answers, 'Bad selection, please choose one of the numbers in square brackets'
+            print('You chose "{}"'.format(indices[video_index]))
+            print('Was this correct? [y/n]')
+            confirm_answer = input()
+            valid_answers = {'y', 'n'}
+            assert confirm_answer in valid_answers, 'Bad selection, please choose from: (y, n)'
+            if confirm_answer == 'y':
+                cut_video(videos[indices[video_index]])
+            elif confirm_answer == 'n':
+                print('Ok, restarting the selection process')
 
-    urls = getPlaylistLinks(args.playlist_url)
-    cut_all_videos(urls)
+    elif to_convert == 'v':
+        cut_video(url)
+    repl()
+
+if __name__ == "__main__":
+    # parser = argparse.ArgumentParser(description='Takes a youtube playlist and and condenses each video using jumpcutter.')
+    # parser.add_argument('--playlist_url', '-p', type=str,  help='the url of the playlist to cut down')
+    # args = parser.parse_args()
+    #
+    # urls = getPlaylistLinks(args.playlist_url)
+    # cut_all_videos(urls)
+    repl()
